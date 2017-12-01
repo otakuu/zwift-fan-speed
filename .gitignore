@@ -8,3 +8,4 @@
 npm-debug.*
 /obj/
 
+/settings.js
