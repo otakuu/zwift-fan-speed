@@ -17,6 +17,7 @@
     "onoff": "^1.1.1",
     "protobufjs": "^6.5.1",
     "zwift-mobile-api": "*",
-	"ws": "^3.3.2"
+	"ws": "^3.3.2",
+	"request": "^2.81.0"
   }
 }

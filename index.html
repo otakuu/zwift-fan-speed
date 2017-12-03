@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+
+<head>
+    <style>
+      body {
+        background-color: #323232;
+      }
+      section {
+        text-align: center;
+      }
+      canvas {
+        padding: 1em;
+      }
+    </style>
+
+    <script type="text/javascript">
+    
+	
+
+    </script>
+	
+</head>
+<body onload="connectToWS()">
+
+	
+	<section class="main">
+      <canvas id="demo" width="400" height="400" data-val="0">No canvas</canvas>
+    </section>
+
+    <input type="hidden" id="demoInput" min="0" max="100" value="0">
+	
+     
+
+	<script src="tacho.js"></script>
+    <script>
+      window.onload = function(){
+        var demo = document.getElementById('demo');
+        tacho(demo, {
+          "title": "Zwift Speed", 
+          "max": 80,
+          "markInterval": 2,
+          "bigMarkInterval": 10,
+          "redLinePoint": 0.85,
+          "autoScale": false
+        });
+
+        var demoInput = document.getElementById('demoInput');
+        demoInput.oninput = function(e){
+            console.log(this.value);
+            demo.setAttribute('data-val', this.value);
+        };
+		
+		var myWebSocket;
+    
+        var endpoint = 'ws://localhost:3001';
+        if (myWebSocket !== undefined) {
+            myWebSocket.close()
+        }
+        myWebSocket = new WebSocket(endpoint);
+        myWebSocket.onmessage = function(event) {
+            var leng;
+            if (event.data.size === undefined) {
+                leng = event.data.length
+            } else {
+                leng = event.data.size
+            }
+            console.log("onmessage. size: " + leng + ", content: " + event.data);
+			jsonObj = JSON.parse(event.data);
+			console.log(jsonObj.speed);
+			
+			document.getElementById('demo').setAttribute('data-val',jsonObj.speed);
+			document.title='Speed: '+jsonObj.speed+' km/h';
+        }
+		
+        myWebSocket.onopen = function(evt) {
+            console.log("onopen.");
+        };
+        myWebSocket.onclose = function(evt) {
+            console.log("onclose.");
+			document.getElementById('demo').setAttribute('data-val',0);
+			document.title='Speed: 0 km/h';
+			console.log("onclose2.");
+        };
+        myWebSocket.onerror = function(evt) {
+            console.log("Error!");
+        };
+    }
+
+    function closeConn() {
+        myWebSocket.close();
+    }
+	
+	
+      
+    </script>
+
+
+</body>
+</html>

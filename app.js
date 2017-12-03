@@ -2,7 +2,8 @@
     FanSpeed = require('./devices/fan-speed'),
     LED = require('./devices/led'),
     settings = require('./settings'),
-    server = require('./server');
+    server = require('./server'),
+	websocket = require('./websocket');
 
 const account = new ZwiftAccount(settings.username, settings.password),
       led = new LED(settings.led);
@@ -44,6 +45,16 @@ function checkPlayerStatus() {
                 startMonitorSpeed(profile);
             } else {
                 console.log(`Player ${settings.player} is not riding`);
+				console.log('Try one of those: ');
+				
+				var world = account.getWorld(1);
+
+				world.riders().then(riders => {
+					console.log(riders.friendsInWorld[0].playerId); // JSON array of all riders currently riding
+					console.log(riders.friendsInWorld[1].playerId); // JSON array of all riders currently riding
+					console.log(riders.friendsInWorld[2].playerId); // JSON array of all riders currently riding
+				});
+
             }
         })
         .catch(err => {
