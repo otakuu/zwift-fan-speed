@@ -1,19 +1,15 @@
-﻿const ZwiftAccount = require('zwift-mobile-api'),
-    FanSpeed = require('./devices/fan-speed'),
-    LED = require('./devices/led'),
-    settings = require('./settings'),
-    server = require('./server'),
-	websocket = require('./websocket');
+const ZwiftAccount = require('zwift-mobile-api'), settings = require('./settings');
+	
+var Gpio = require('onoff').Gpio; 
+var RELAISPOWER = new Gpio(4, 'out'); 
+var RELAISLEVEL = new Gpio(3, 'out'); 
 
-const account = new ZwiftAccount(settings.username, settings.password),
-      led = new LED(settings.led);
+const account = new ZwiftAccount(settings.username, settings.password);
 
-let interval,
-    playerProfile,
-    fanSpeed = new FanSpeed(settings.fan),
-    errorCount
+let interval, playerProfile, errorCount
 
-server.setFanSpeed(fanSpeed);
+console.log('zwiffer started...');
+
 startWaitPlayer();
 
 function startWaitPlayer() {
@@ -21,7 +17,9 @@ function startWaitPlayer() {
 }
 
 function startMonitorSpeed(profile) {
+	
     console.log('Start monitoring rider speed');
+
     playerProfile = profile
     errorCount = 0;
 
@@ -35,10 +33,8 @@ function startInterval(callbackFn, timeout) {
 }
 
 function checkPlayerStatus() {
-    led.setState('off');
     account.getProfile(settings.player).profile()
         .then(profile => {
-            led.setState('on');
 
             if (profile.riding) {
                 console.log(`Player ${settings.player} has started riding`);
@@ -58,16 +54,13 @@ function checkPlayerStatus() {
             }
         })
         .catch(err => {
-            led.setState('error');
             console.log(`Error getting player status: ${err.response.status} - ${err.response.statusText}`);
         });
 }
 
 function checkPlayerSpeed() {
-    led.setState('on');
     account.getWorld(playerProfile.worldId).riderStatus(settings.player)
         .then(status => {
-            led.setState('off');
 
             if (!status || status.speed === undefined) {
                 console.log('Invalid rider status');
@@ -75,9 +68,25 @@ function checkPlayerSpeed() {
             } else {
                 errorCount = 0;
                 const speedkm = Math.round((status.speed / 1000000));
-                console.log(`Distance: ${status.distance}, Time: ${status.time}, Speed: ${speedkm}km/h, Watts: ${status.power}w`);
-
-                fanSpeed.setState(speedkm);
+                console.log(`Distance: ${status.distance}m, Time: ${status.time}secs, Speed: ${speedkm}km/h, Watts: ${status.power}w`);
+				
+                var fanState = getFanSpeed(status.power);
+				console.log('fanState: '+fanState)
+				
+				if(fanState==0){
+					RELAISLEVEL.writeSync(0);
+					RELAISPOWER.writeSync(0);
+				}
+				
+				if(fanState==1){
+					RELAISLEVEL.writeSync(0);
+					RELAISPOWER.writeSync(1);
+				}
+				
+				if(fanState==2){
+					RELAISLEVEL.writeSync(1);
+					RELAISPOWER.writeSync(1);
+				}
             }
         })
         .catch(err => {
@@ -87,10 +96,20 @@ function checkPlayerSpeed() {
 }
 
 function speedCheckError() {
-    led.setState('error');
     errorCount++;
     if (errorCount >= 3) {
         fanSpeed.setState(0);
         startWaitPlayer();
-    }
+	}
+}
+	
+function getFanSpeed(watts) {
+	if(watts<settings.fanLevel0)
+		return 0;
+	
+	if(watts<settings.fanLevel1)
+		return 1;
+	
+	if(watts>=settings.fanLevel1)
+		return 2;
 }

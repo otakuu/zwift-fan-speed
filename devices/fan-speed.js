@@ -24,18 +24,16 @@ class FanSpeed {
     }
   }
 
-  getFanSpeed(speedKm) {
-    if (speedKm > this.settings.max) speedKm = this.settings.max;
-    if (speedKm < this.settings.min) speedKm = this.settings.min;
-
-    let speed = Math.pow((speedKm - this.settings.min), this.settings.scale)
-      / Math.pow((this.settings.max - this.settings.min), this.settings.scale);
-
-	    if (speed < this.settings.base) {
-		speed = speed < this.settings.base / 2 ? 0 : this.settings.base;
-	    }
-
-    return Math.round(speed * 100) / 100;
+  getFanSpeed(watts) {
+    
+	if(watts<50)
+		return 0;
+	
+	if(watts<100)
+		return 1;
+	
+	if(watts>=100)
+		return 2;
   }
 
   onTimeout(outVal) {
@@ -64,11 +62,13 @@ class FanSpeed {
   }
 
   setState(speed) {
-    this.speed = speed;
+    //this.speed = speed;
     this.currentState = this.getFanSpeed(speed);
-    if (!this.gpio) {
-      console.log(`Fan speed ${this.currentState}`);
-    }
+	console.log(`Fan statuts: ${this.currentState}`);
+    /*if (!this.gpio) {
+      console.log(`Fan speed0 ${this.currentState}`);
+    }*/
+	
     return this.currentState;
   }
 
